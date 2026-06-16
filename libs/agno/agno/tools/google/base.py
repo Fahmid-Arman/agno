@@ -145,10 +145,14 @@ class GoogleToolkit(Toolkit):
         if creds.expired and creds.refresh_token:
             try:
                 creds.refresh(Request())
-                # Save refreshed token back to DB
-                self._save_to_db(db, creds, user_id)
             except Exception:
                 return None
+            # Save refreshed token — best effort, don't fail if DB write fails
+            if creds.valid:
+                try:
+                    self._save_to_db(db, creds, user_id)
+                except Exception:
+                    log_debug(f"Failed to save refreshed {self.google_service_name} token to DB")
 
         return creds if creds.valid else None
 
@@ -204,9 +208,14 @@ class GoogleToolkit(Toolkit):
         if creds and creds.expired and creds.refresh_token:
             try:
                 creds.refresh(Request())
-                token_file.write_text(creds.to_json())
             except Exception:
                 creds = None
+            # Save refreshed token — best effort, don't fail if file write fails
+            if creds and creds.valid:
+                try:
+                    token_file.write_text(creds.to_json())
+                except Exception:
+                    log_debug(f"Failed to save refreshed {self.google_service_name} token to file")
 
         if creds and creds.valid:
             if self._auth:
