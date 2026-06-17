@@ -3,7 +3,7 @@ Gmail Agent that can read, draft and send emails using the Gmail.
 """
 
 from agno.agent import Agent
-from agno.models.openai import OpenAIChat
+from agno.models.openai import OpenAIResponses
 from agno.tools.google.gmail import GmailTools
 from pydantic import BaseModel, Field
 
@@ -24,16 +24,17 @@ class FindEmailOutput(BaseModel):
 # Example 1: Include specific Gmail functions for reading only
 read_only_agent = Agent(
     name="Gmail Reader Agent",
-    model=OpenAIChat(id="gpt-4o"),
+    model=OpenAIResponses(id="gpt-5.5"),
     tools=[
         GmailTools(
+            max_results=10,
             include_tools=[
                 "search_emails",
                 "get_emails_by_thread",
                 "mark_email_as_read",
                 "mark_email_as_unread",
                 "list_custom_labels",
-            ]
+            ],
         )
     ],
     description="You are a Gmail reading specialist that can search, read and label emails.",
@@ -51,8 +52,10 @@ read_only_agent = Agent(
 # Example 2: Exclude dangerous functions (sending emails)
 safe_gmail_agent = Agent(
     name="Safe Gmail Agent",
-    model=OpenAIChat(id="gpt-4o"),
-    tools=[GmailTools(exclude_tools=["send_email", "send_email_reply"])],
+    model=OpenAIResponses(id="gpt-5.5"),
+    tools=[
+        GmailTools(max_results=10, exclude_tools=["send_email", "send_email_reply"])
+    ],
     description="You are a Gmail agent with safe operations only.",
     instructions=[
         "You can read and draft emails but cannot send them.",
@@ -65,9 +68,10 @@ safe_gmail_agent = Agent(
 # Example 3: Label Management Specialist Agent
 label_manager_agent = Agent(
     name="Gmail Label Manager",
-    model=OpenAIChat(id="gpt-4o"),
+    model=OpenAIResponses(id="gpt-5.5"),
     tools=[
         GmailTools(
+            max_results=10,
             include_tools=[
                 "list_custom_labels",
                 "apply_label",
@@ -75,7 +79,7 @@ label_manager_agent = Agent(
                 "delete_custom_label",
                 "search_emails",
                 "get_emails_by_context",
-            ]
+            ],
         )
     ],
     description="You are a Gmail label management specialist that helps organize emails with labels.",
@@ -92,8 +96,8 @@ label_manager_agent = Agent(
 # Example 4: Full Gmail functionality (default)
 agent = Agent(
     name="Full Gmail Agent",
-    model=OpenAIChat(id="gpt-4o"),
-    tools=[GmailTools()],
+    model=OpenAIResponses(id="gpt-5.5"),
+    tools=[GmailTools(max_results=10)],
     description="You are an expert Gmail Agent that can read, draft, send and label emails using Gmail.",
     instructions=[
         "Based on user query, you can read, draft, send and label emails using Gmail.",
@@ -109,8 +113,8 @@ agent = Agent(
 # Example 5: Draft a reply to a conversation thread
 thread_reply_agent = Agent(
     name="Thread Reply Agent",
-    model=OpenAIChat(id="gpt-4o"),
-    tools=[GmailTools()],
+    model=OpenAIResponses(id="gpt-5.5"),
+    tools=[GmailTools(max_results=10)],
     description="You are a Gmail agent that finds conversations and drafts threaded replies.",
     instructions=[
         "Search for the requested thread, load full context, then draft a reply.",
