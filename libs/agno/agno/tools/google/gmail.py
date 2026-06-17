@@ -393,12 +393,10 @@ class GmailTools(GoogleToolkit):
         Get the latest X emails from the user's inbox.
 
         Args:
-            count (int): Number of latest emails to retrieve (capped at max_results_per_request)
-            page_token (Optional[str]): Token for pagination. Pass nextPageToken from previous response.
+            count (int): Number of latest emails to retrieve            page_token (Optional[str]): Token for fetching next page of results.
 
         Returns:
-            str: Formatted string containing email details, with pagination info if more results exist
-        """
+            str: Formatted string containing email details        """
         try:
             effective_count = min(count, self._auth.max_results)
             list_kwargs: Dict[str, Any] = {"userId": "me", "maxResults": effective_count}
@@ -419,12 +417,10 @@ class GmailTools(GoogleToolkit):
 
         Args:
             user (str): Name or email address of the sender
-            count (int): Maximum number of emails to retrieve (capped at max_results_per_request)
-            page_token (Optional[str]): Token for pagination. Pass nextPageToken from previous response.
+            count (int): Maximum number of emails to retrieve            page_token (Optional[str]): Token for fetching next page of results.
 
         Returns:
-            str: Formatted string containing email details, with pagination info if more results exist
-        """
+            str: Formatted string containing email details        """
         try:
             query = f"from:{user}" if "@" in user else f"from:{user}*"
             effective_count = min(count, self._auth.max_results)
@@ -445,12 +441,10 @@ class GmailTools(GoogleToolkit):
         Get the X number of latest unread emails from the user's inbox.
 
         Args:
-            count (int): Maximum number of unread emails to retrieve (capped at max_results_per_request)
-            page_token (Optional[str]): Token for pagination. Pass nextPageToken from previous response.
+            count (int): Maximum number of unread emails to retrieve            page_token (Optional[str]): Token for fetching next page of results.
 
         Returns:
-            str: Formatted string containing email details, with pagination info if more results exist
-        """
+            str: Formatted string containing email details        """
         try:
             effective_count = min(count, self._auth.max_results)
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": "is:unread", "maxResults": effective_count}
@@ -491,12 +485,10 @@ class GmailTools(GoogleToolkit):
         Get X number of starred emails from the user's inbox.
 
         Args:
-            count (int): Maximum number of starred emails to retrieve (capped at max_results_per_request)
-            page_token (Optional[str]): Token for pagination. Pass nextPageToken from previous response.
+            count (int): Maximum number of starred emails to retrieve            page_token (Optional[str]): Token for fetching next page of results.
 
         Returns:
-            str: Formatted string containing email details, with pagination info if more results exist
-        """
+            str: Formatted string containing email details        """
         try:
             effective_count = min(count, self._auth.max_results)
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": "is:starred", "maxResults": effective_count}
@@ -517,12 +509,10 @@ class GmailTools(GoogleToolkit):
 
         Args:
             context (str): Search term or context to match in emails
-            count (int): Maximum number of emails to retrieve (capped at max_results_per_request)
-            page_token (Optional[str]): Token for pagination. Pass nextPageToken from previous response.
+            count (int): Maximum number of emails to retrieve            page_token (Optional[str]): Token for fetching next page of results.
 
         Returns:
-            str: Formatted string containing email details, with pagination info if more results exist
-        """
+            str: Formatted string containing email details        """
         try:
             effective_count = min(count, self._auth.max_results)
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": context, "maxResults": effective_count}
@@ -550,7 +540,7 @@ class GmailTools(GoogleToolkit):
             start_date (str): Start date in YYYY/MM/DD format (e.g. "2026/03/01").
             range_in_days (Optional[int]): Number of days to include in the range (default: None, meaning all emails after start_date).
             num_emails (Optional[int]): Maximum number of emails to retrieve (default: 10, capped at max_results_per_request).
-            page_token (Optional[str]): Token for pagination. Pass nextPageToken from previous response.
+            page_token (Optional[str]): Token for fetching next page of results.
 
         Returns:
             str: Formatted string containing email details, with pagination info if more results exist.
@@ -772,12 +762,10 @@ class GmailTools(GoogleToolkit):
 
         Args:
             query (str): Natural language query to search for
-            count (int): Number of emails to retrieve (capped at max_results_per_request)
-            page_token (Optional[str]): Token for pagination. Pass nextPageToken from previous response.
+            count (int): Number of emails to retrieve            page_token (Optional[str]): Token for fetching next page of results.
 
         Returns:
-            str: Formatted string containing email details, with pagination info if more results exist
-        """
+            str: Formatted string containing email details        """
         try:
             effective_count = min(count, self._auth.max_results)
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": query, "maxResults": effective_count}
@@ -933,8 +921,7 @@ class GmailTools(GoogleToolkit):
         Args:
             context (str): Gmail search query (e.g., 'is:unread category:promotions')
             label_name (str): Name of the label to apply
-            count (int): Maximum number of emails to process (capped at max_results_per_request)
-        Returns:
+            count (int): Maximum number of emails to process        Returns:
             str: Summary of labeled emails
         """
         try:
@@ -983,8 +970,7 @@ class GmailTools(GoogleToolkit):
         Args:
             context (str): Gmail search query (e.g., 'is:unread category:promotions')
             label_name (str): Name of the label to remove
-            count (int): Maximum number of emails to process (capped at max_results_per_request)
-        Returns:
+            count (int): Maximum number of emails to process        Returns:
             str: Summary of emails with label removed
         """
         try:
@@ -1444,7 +1430,7 @@ class GmailTools(GoogleToolkit):
         Args:
             query: Gmail search query string. Supports all Gmail operators like from:, to:, subject:, is:unread, etc.
             count: Maximum number of threads to return (default 10, capped at max_results_per_request).
-            page_token: Token for pagination. Pass nextPageToken from previous response.
+            page_token: Token for fetching next page of results.
 
         Returns:
             JSON string with list of matching threads with their IDs and snippets.
@@ -1565,7 +1551,7 @@ class GmailTools(GoogleToolkit):
 
         Args:
             count: Maximum number of drafts to return (default 10, capped at max_results_per_request).
-            page_token: Token for pagination. Pass nextPageToken from previous response.
+            page_token: Token for fetching next page of results.
 
         Returns:
             JSON string with list of draft IDs and estimated total count.
