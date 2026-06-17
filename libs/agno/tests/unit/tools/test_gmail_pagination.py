@@ -23,36 +23,18 @@ class TestMaxResultsConfig:
         auth = AuthConfig(max_results=25)
         assert auth.max_results == 25
 
-    def test_effective_page_size_clamps_to_api_limit(self):
-        """_effective_page_size clamps to API limit when config exceeds it."""
-        auth = AuthConfig(max_results=1000)
-        toolkit = GmailTools.__new__(GmailTools)
-        toolkit._auth = auth
-        # Request 1000, config 1000, API limit 500 → 500
-        assert toolkit._effective_page_size(1000, 500) == 500
-
-    def test_effective_page_size_uses_config_when_lower(self):
-        """_effective_page_size uses config value when lower than request and API limit."""
+    def test_max_results_limit_uses_config(self):
+        """_max_results_limit returns config value."""
         auth = AuthConfig(max_results=25)
         toolkit = GmailTools.__new__(GmailTools)
         toolkit._auth = auth
-        # Request 100, config 25, API limit 500 → 25
-        assert toolkit._effective_page_size(100, 500) == 25
+        assert toolkit._max_results_limit() == 25
 
-    def test_effective_page_size_minimum_is_one(self):
-        """_effective_page_size never returns less than 1."""
-        auth = AuthConfig(max_results=0)
+    def test_max_results_limit_default(self):
+        """_max_results_limit returns 20 when no auth."""
         toolkit = GmailTools.__new__(GmailTools)
-        toolkit._auth = auth
-        assert toolkit._effective_page_size(0, 500) == 1
-
-    def test_effective_page_size_uses_requested_when_smallest(self):
-        """_effective_page_size uses requested when it's the smallest."""
-        auth = AuthConfig(max_results=100)
-        toolkit = GmailTools.__new__(GmailTools)
-        toolkit._auth = auth
-        # Request 10, config 100, API limit 500 → 10
-        assert toolkit._effective_page_size(10, 500) == 10
+        toolkit._auth = None
+        assert toolkit._max_results_limit() == 20
 
 
 class TestGmailPagination:

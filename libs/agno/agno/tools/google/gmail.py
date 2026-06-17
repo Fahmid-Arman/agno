@@ -398,7 +398,7 @@ class GmailTools(GoogleToolkit):
             str: Formatted string containing email details, with pagination info if more results exist
         """
         try:
-            effective_count = self._effective_page_size(count, 500)
+            effective_count = min(count, self._max_results_limit())
             list_kwargs: Dict[str, Any] = {"userId": "me", "maxResults": effective_count}
             if page_token:
                 list_kwargs["pageToken"] = page_token
@@ -429,7 +429,7 @@ class GmailTools(GoogleToolkit):
         """
         try:
             query = f"from:{user}" if "@" in user else f"from:{user}*"
-            effective_count = self._effective_page_size(count, 500)
+            effective_count = min(count, self._max_results_limit())
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": query, "maxResults": effective_count}
             if page_token:
                 list_kwargs["pageToken"] = page_token
@@ -458,7 +458,7 @@ class GmailTools(GoogleToolkit):
             str: Formatted string containing email details, with pagination info if more results exist
         """
         try:
-            effective_count = self._effective_page_size(count, 500)
+            effective_count = min(count, self._max_results_limit())
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": "is:unread", "maxResults": effective_count}
             if page_token:
                 list_kwargs["pageToken"] = page_token
@@ -508,7 +508,7 @@ class GmailTools(GoogleToolkit):
             str: Formatted string containing email details, with pagination info if more results exist
         """
         try:
-            effective_count = self._effective_page_size(count, 500)
+            effective_count = min(count, self._max_results_limit())
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": "is:starred", "maxResults": effective_count}
             if page_token:
                 list_kwargs["pageToken"] = page_token
@@ -538,7 +538,7 @@ class GmailTools(GoogleToolkit):
             str: Formatted string containing email details, with pagination info if more results exist
         """
         try:
-            effective_count = self._effective_page_size(count, 500)
+            effective_count = min(count, self._max_results_limit())
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": context, "maxResults": effective_count}
             if page_token:
                 list_kwargs["pageToken"] = page_token
@@ -581,7 +581,7 @@ class GmailTools(GoogleToolkit):
             else:
                 query = f"after:{start_date}"
 
-            effective_count = self._effective_page_size(num_emails or 10, 500)
+            effective_count = min(num_emails or 10, self._max_results_limit())
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": query, "maxResults": effective_count}
             if page_token:
                 list_kwargs["pageToken"] = page_token
@@ -801,7 +801,7 @@ class GmailTools(GoogleToolkit):
             str: Formatted string containing email details, with pagination info if more results exist
         """
         try:
-            effective_count = self._effective_page_size(count, 500)
+            effective_count = min(count, self._max_results_limit())
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": query, "maxResults": effective_count}
             if page_token:
                 list_kwargs["pageToken"] = page_token
@@ -964,7 +964,7 @@ class GmailTools(GoogleToolkit):
             str: Summary of labeled emails
         """
         try:
-            effective_count = self._effective_page_size(count, 500)
+            effective_count = min(count, self._max_results_limit())
             results = self.service.users().messages().list(userId="me", q=context, maxResults=effective_count).execute()  # type: ignore
 
             messages = results.get("messages", [])
@@ -1020,7 +1020,7 @@ class GmailTools(GoogleToolkit):
             if not label_id:
                 return f"Label '{label_name}' not found."
 
-            effective_count = self._effective_page_size(count, 500)
+            effective_count = min(count, self._max_results_limit())
             results = (
                 self.service.users()  # type: ignore
                 .messages()
@@ -1477,7 +1477,7 @@ class GmailTools(GoogleToolkit):
         """
         try:
             service = self.service
-            effective_count = self._effective_page_size(count, 500)
+            effective_count = min(count, self._max_results_limit())
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": query, "maxResults": effective_count}
             if page_token:
                 list_kwargs["pageToken"] = page_token
@@ -1598,7 +1598,7 @@ class GmailTools(GoogleToolkit):
         """
         try:
             service = self.service
-            effective_count = self._effective_page_size(count, 500)
+            effective_count = min(count, self._max_results_limit())
             list_kwargs: Dict[str, Any] = {"userId": "me", "maxResults": effective_count}
             if page_token:
                 list_kwargs["pageToken"] = page_token

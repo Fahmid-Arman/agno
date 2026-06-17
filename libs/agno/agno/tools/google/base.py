@@ -110,10 +110,9 @@ class GoogleToolkit(Toolkit):
         # 3. Default
         return DEFAULT_GOOGLE_API_TIMEOUT
 
-    def _effective_page_size(self, requested: int, api_limit: int = 500) -> int:
-        """Compute effective page size: min(requested, config, api_limit), at least 1."""
-        config_max = self._auth.max_results if self._auth else 20
-        return max(1, min(requested, config_max, api_limit))
+    def _max_results_limit(self) -> int:
+        """Get max_results from AuthConfig, default 20."""
+        return self._auth.max_results if self._auth else 20
 
     def _make_auth_request(self) -> Any:
         """Create Request for credential refresh operations.
