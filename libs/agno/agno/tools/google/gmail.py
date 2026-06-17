@@ -185,6 +185,7 @@ class GmailTools(GoogleToolkit):
         trash_message: bool = False,
         download_attachment: bool = False,
         max_batch_size: int = 10,
+        max_results: Optional[int] = None,
         instructions: Optional[str] = None,
         add_instructions: bool = True,
         **kwargs,
@@ -309,6 +310,7 @@ class GmailTools(GoogleToolkit):
             delegated_user=delegated_user,
             oauth_port=oauth_port,
             login_hint=login_hint,
+            max_results=max_results,
             **kwargs,
         )
 
