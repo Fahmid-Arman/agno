@@ -107,19 +107,13 @@ GMAIL_QUERY_INSTRUCTIONS = textwrap.dedent("""\
     - `from:user@example.com` / `to:user@example.com` — filter by sender/recipient
     - `subject:"meeting notes"` — filter by subject
     - `is:unread` / `is:starred` / `is:important` — filter by status
-    - `category:primary` / `category:social` / `category:promotions` / `category:updates` — Gmail tabs
-    - `has:attachment` / `filename:pdf` — attachment filters
-    - `larger:5M` / `smaller:1M` — size filters
+    - `category:primary` / `category:social` / `category:promotions` / `category:updates` — filter by Gmail tab
+    - `has:attachment` — emails with attachments
     - `newer_than:7d` / `older_than:1m` — relative date (d=days, m=months, y=years)
     - `after:2024/01/01` / `before:2024/12/31` — absolute date range
-    - `label:work` / `-label:processed` — filter by label (- to exclude)
+    - `label:work` — filter by label
     - `from:me` — emails sent by the user
-    - Combine with spaces (AND): `category:primary is:unread newer_than:7d`
-    - Use OR for alternatives: `from:alice OR from:bob`
-
-    ## Batch Operations
-    Methods like mark_email_as_read, star_email, archive_email accept multiple message IDs.
-    Pass comma-separated IDs to process in one call: `mark_email_as_read("id1,id2,id3")`""")
+    - Combine with spaces (AND): `from:me newer_than:7d has:attachment`""")
 
 GMAIL_COMPOSE_INSTRUCTIONS = textwrap.dedent("""
     ## Composing Emails
