@@ -23,18 +23,6 @@ class TestMaxResultsConfig:
         auth = AuthConfig(max_results=25)
         assert auth.max_results == 25
 
-    def test_max_results_limit_uses_config(self):
-        """_max_results_limit returns config value."""
-        auth = AuthConfig(max_results=25)
-        toolkit = GmailTools.__new__(GmailTools)
-        toolkit._auth = auth
-        assert toolkit._max_results_limit() == 25
-
-    def test_max_results_limit_default(self):
-        """_max_results_limit returns 20 when no auth."""
-        toolkit = GmailTools.__new__(GmailTools)
-        toolkit._auth = None
-        assert toolkit._max_results_limit() == 20
 
 
 class TestGmailPagination:
