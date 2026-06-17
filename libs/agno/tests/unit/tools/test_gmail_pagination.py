@@ -67,11 +67,10 @@ class TestGmailPagination:
         call_kwargs = mock_gmail_service.users().messages().list.call_args[1]
         assert call_kwargs["pageToken"] == "test_token_123"
 
-    def test_get_latest_emails_returns_next_page_token(self, gmail_tools, mock_gmail_service):
-        """get_latest_emails includes nextPageToken in response when available."""
+    def test_get_latest_emails_returns_formatted_emails(self, gmail_tools, mock_gmail_service):
+        """get_latest_emails returns formatted email content."""
         mock_gmail_service.users.return_value.messages.return_value.list.return_value.execute.return_value = {
             "messages": [{"id": "msg1"}],
-            "nextPageToken": "next_page_abc",
         }
         mock_gmail_service.users.return_value.messages.return_value.get.return_value.execute.return_value = {
             "id": "msg1",
@@ -80,8 +79,7 @@ class TestGmailPagination:
 
         result = gmail_tools.get_latest_emails(count=5)
 
-        assert "next_page_abc" in result
-        assert "More results available" in result
+        assert "Message ID: msg1" in result
 
     def test_search_threads_returns_next_page_token_in_json(self, gmail_tools, mock_gmail_service):
         """search_threads includes nextPageToken in JSON response."""
@@ -125,14 +123,12 @@ class TestGmailPagination:
         gmail_tools.get_unread_emails(count=5)
         gmail_tools.search_emails(query="test", count=5)
 
-    def test_no_next_page_token_when_exhausted(self, gmail_tools, mock_gmail_service):
-        """No pagination message when all results returned."""
+    def test_empty_results(self, gmail_tools, mock_gmail_service):
+        """Empty results returns no emails found message."""
         mock_gmail_service.users.return_value.messages.return_value.list.return_value.execute.return_value = {
             "messages": []
-            # No nextPageToken = no more results
         }
 
         result = gmail_tools.get_latest_emails(count=5)
 
-        assert "More results available" not in result
-        assert "page_token" not in result
+        assert "No emails found" in result

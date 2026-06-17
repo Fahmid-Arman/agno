@@ -404,11 +404,7 @@ class GmailTools(GoogleToolkit):
                 list_kwargs["pageToken"] = page_token
             results = self.service.users().messages().list(**list_kwargs).execute()  # type: ignore
             emails = self._get_message_details(results.get("messages", []))
-            output = self._format_emails(emails)
-            next_token = results.get("nextPageToken")
-            if next_token:
-                output += f"\n\n---\n[More results available. Call with page_token='{next_token}' to continue]"
-            return output
+            return self._format_emails(emails)
         except HttpError as error:
             return f"Error retrieving latest emails: {error}"
         except Exception as error:
@@ -435,11 +431,7 @@ class GmailTools(GoogleToolkit):
                 list_kwargs["pageToken"] = page_token
             results = self.service.users().messages().list(**list_kwargs).execute()  # type: ignore
             emails = self._get_message_details(results.get("messages", []))
-            output = self._format_emails(emails)
-            next_token = results.get("nextPageToken")
-            if next_token:
-                output += f"\n\n---\n[More results available. Call with page_token='{next_token}' to continue]"
-            return output
+            return self._format_emails(emails)
         except HttpError as error:
             return f"Error retrieving emails from {user}: {error}"
         except Exception as error:
@@ -464,11 +456,7 @@ class GmailTools(GoogleToolkit):
                 list_kwargs["pageToken"] = page_token
             results = self.service.users().messages().list(**list_kwargs).execute()  # type: ignore
             emails = self._get_message_details(results.get("messages", []))
-            output = self._format_emails(emails)
-            next_token = results.get("nextPageToken")
-            if next_token:
-                output += f"\n\n---\n[More results available. Call with page_token='{next_token}' to continue]"
-            return output
+            return self._format_emails(emails)
         except HttpError as error:
             return f"Error retrieving unread emails: {error}"
         except Exception as error:
@@ -514,11 +502,7 @@ class GmailTools(GoogleToolkit):
                 list_kwargs["pageToken"] = page_token
             results = self.service.users().messages().list(**list_kwargs).execute()  # type: ignore
             emails = self._get_message_details(results.get("messages", []))
-            output = self._format_emails(emails)
-            next_token = results.get("nextPageToken")
-            if next_token:
-                output += f"\n\n---\n[More results available. Call with page_token='{next_token}' to continue]"
-            return output
+            return self._format_emails(emails)
         except HttpError as error:
             return f"Error retrieving starred emails: {error}"
         except Exception as error:
@@ -544,11 +528,7 @@ class GmailTools(GoogleToolkit):
                 list_kwargs["pageToken"] = page_token
             results = self.service.users().messages().list(**list_kwargs).execute()  # type: ignore
             emails = self._get_message_details(results.get("messages", []))
-            output = self._format_emails(emails)
-            next_token = results.get("nextPageToken")
-            if next_token:
-                output += f"\n\n---\n[More results available. Call with page_token='{next_token}' to continue]"
-            return output
+            return self._format_emails(emails)
         except HttpError as error:
             return f"Error retrieving emails by context '{context}': {error}"
         except Exception as error:
@@ -587,11 +567,7 @@ class GmailTools(GoogleToolkit):
                 list_kwargs["pageToken"] = page_token
             results = self.service.users().messages().list(**list_kwargs).execute()  # type: ignore
             emails = self._get_message_details(results.get("messages", []))
-            output = self._format_emails(emails)
-            next_token = results.get("nextPageToken")
-            if next_token:
-                output += f"\n\n---\n[More results available. Call with page_token='{next_token}' to continue]"
-            return output
+            return self._format_emails(emails)
         except HttpError as error:
             return f"Error retrieving emails by date: {error}"
         except Exception as error:
@@ -807,11 +783,7 @@ class GmailTools(GoogleToolkit):
                 list_kwargs["pageToken"] = page_token
             results = self.service.users().messages().list(**list_kwargs).execute()  # type: ignore
             emails = self._get_message_details(results.get("messages", []))
-            output = self._format_emails(emails)
-            next_token = results.get("nextPageToken")
-            if next_token:
-                output += f"\n\n---\n[More results available. Call with page_token='{next_token}' to continue]"
-            return output
+            return self._format_emails(emails)
         except HttpError as error:
             return f"Error retrieving emails with query '{query}': {error}"
         except Exception as error:
