@@ -396,7 +396,7 @@ class GmailTools(GoogleToolkit):
             count (int): Number of latest emails to retrieve            page_token (Optional[str]): Token for fetching next page of results.
 
         Returns:
-            str: Formatted string containing email details        """
+            str: Formatted string containing email details"""
         try:
             effective_count = min(count, self._auth.max_results)
             list_kwargs: Dict[str, Any] = {"userId": "me", "maxResults": effective_count}
@@ -420,7 +420,7 @@ class GmailTools(GoogleToolkit):
             count (int): Maximum number of emails to retrieve            page_token (Optional[str]): Token for fetching next page of results.
 
         Returns:
-            str: Formatted string containing email details        """
+            str: Formatted string containing email details"""
         try:
             query = f"from:{user}" if "@" in user else f"from:{user}*"
             effective_count = min(count, self._auth.max_results)
@@ -444,7 +444,7 @@ class GmailTools(GoogleToolkit):
             count (int): Maximum number of unread emails to retrieve            page_token (Optional[str]): Token for fetching next page of results.
 
         Returns:
-            str: Formatted string containing email details        """
+            str: Formatted string containing email details"""
         try:
             effective_count = min(count, self._auth.max_results)
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": "is:unread", "maxResults": effective_count}
@@ -488,7 +488,7 @@ class GmailTools(GoogleToolkit):
             count (int): Maximum number of starred emails to retrieve            page_token (Optional[str]): Token for fetching next page of results.
 
         Returns:
-            str: Formatted string containing email details        """
+            str: Formatted string containing email details"""
         try:
             effective_count = min(count, self._auth.max_results)
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": "is:starred", "maxResults": effective_count}
@@ -512,7 +512,7 @@ class GmailTools(GoogleToolkit):
             count (int): Maximum number of emails to retrieve            page_token (Optional[str]): Token for fetching next page of results.
 
         Returns:
-            str: Formatted string containing email details        """
+            str: Formatted string containing email details"""
         try:
             effective_count = min(count, self._auth.max_results)
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": context, "maxResults": effective_count}
@@ -765,7 +765,7 @@ class GmailTools(GoogleToolkit):
             count (int): Number of emails to retrieve            page_token (Optional[str]): Token for fetching next page of results.
 
         Returns:
-            str: Formatted string containing email details        """
+            str: Formatted string containing email details"""
         try:
             effective_count = min(count, self._auth.max_results)
             list_kwargs: Dict[str, Any] = {"userId": "me", "q": query, "maxResults": effective_count}
@@ -779,112 +779,167 @@ class GmailTools(GoogleToolkit):
         except Exception as error:
             return f"Unexpected error retrieving emails with query '{query}': {type(error).__name__}: {error}"
 
-    @authenticate
-    def mark_email_as_read(self, message_id: str) -> str:
-        """
-        Mark a specific email as read by removing the 'UNREAD' label.
-        This is crucial for long polling scenarios to prevent processing the same email multiple times.
-
-        Args:
-            message_id (str): The ID of the message to mark as read
-
-        Returns:
-            str: Success message or error description
-        """
-        try:
-            # Remove the UNREAD label to mark the email as read
-            modify_request = {"removeLabelIds": ["UNREAD"]}
-
-            self.service.users().messages().modify(userId="me", id=message_id, body=modify_request).execute()  # type: ignore
-
-            return f"Successfully marked email {message_id} as read. Labels removed: UNREAD"
-
-        except HttpError as error:
-            return f"HTTP Error marking email {message_id} as read: {error}"
-        except Exception as error:
-            return f"Error marking email {message_id} as read: {type(error).__name__}: {error}"
+    def _normalize_message_ids(self, message_id: Union[str, List[str]]) -> List[str]:
+        """Normalize message_id input to a list of IDs. Accepts string, comma-separated string, or list."""
+        if isinstance(message_id, list):
+            return [mid.strip() for mid in message_id if mid.strip()]
+        return [mid.strip() for mid in message_id.split(",") if mid.strip()]
 
     @authenticate
-    def mark_email_as_unread(self, message_id: str) -> str:
-        """
-        Mark a specific email as unread by adding the 'UNREAD' label.
-        This is useful for flagging emails that need attention or re-processing.
+    def mark_email_as_read(self, message_id: Union[str, List[str]]) -> str:
+        """Mark one or more emails as read by removing the UNREAD label. Supports batch.
 
         Args:
-            message_id (str): The ID of the message to mark as unread
+            message_id: Gmail message ID(s). Accepts single ID, comma-separated IDs, or list.
 
         Returns:
-            str: Success message or error description
+            str: Success message with count of emails marked as read.
         """
         try:
-            # Add the UNREAD label to mark the email as unread
-            modify_request = {"addLabelIds": ["UNREAD"]}
+            ids = self._normalize_message_ids(message_id)
+            if not ids:
+                return "Error: No message IDs provided"
 
-            self.service.users().messages().modify(userId="me", id=message_id, body=modify_request).execute()  # type: ignore
+            if len(ids) == 1:
+                self.service.users().messages().modify(
+                    userId="me", id=ids[0], body={"removeLabelIds": ["UNREAD"]}
+                ).execute()  # type: ignore
+            else:
+                self.service.users().messages().batchModify(
+                    userId="me", body={"ids": ids, "removeLabelIds": ["UNREAD"]}
+                ).execute()  # type: ignore
 
-            return f"Successfully marked email {message_id} as unread. Labels added: UNREAD"
+            return f"Successfully marked {len(ids)} email(s) as read"
 
         except HttpError as error:
-            return f"HTTP Error marking email {message_id} as unread: {error}"
+            return f"HTTP Error marking emails as read: {error}"
         except Exception as error:
-            return f"Error marking email {message_id} as unread: {type(error).__name__}: {error}"
+            return f"Error marking emails as read: {type(error).__name__}: {error}"
 
     @authenticate
-    def star_email(self, message_id: str) -> str:
-        """Add a star to an email message.
+    def mark_email_as_unread(self, message_id: Union[str, List[str]]) -> str:
+        """Mark one or more emails as unread by adding the UNREAD label. Supports batch.
 
         Args:
-            message_id (str): The ID of the message to star.
+            message_id: Gmail message ID(s). Accepts single ID, comma-separated IDs, or list.
 
         Returns:
-            str: Success message or error description.
+            str: Success message with count of emails marked as unread.
         """
         try:
-            modify_request = {"addLabelIds": ["STARRED"]}
-            self.service.users().messages().modify(userId="me", id=message_id, body=modify_request).execute()  # type: ignore
-            return f"Successfully starred email {message_id}"
+            ids = self._normalize_message_ids(message_id)
+            if not ids:
+                return "Error: No message IDs provided"
+
+            if len(ids) == 1:
+                self.service.users().messages().modify(
+                    userId="me", id=ids[0], body={"addLabelIds": ["UNREAD"]}
+                ).execute()  # type: ignore
+            else:
+                self.service.users().messages().batchModify(
+                    userId="me", body={"ids": ids, "addLabelIds": ["UNREAD"]}
+                ).execute()  # type: ignore
+
+            return f"Successfully marked {len(ids)} email(s) as unread"
+
         except HttpError as error:
-            return f"HTTP Error starring email {message_id}: {error}"
+            return f"HTTP Error marking emails as unread: {error}"
         except Exception as error:
-            return f"Error starring email {message_id}: {type(error).__name__}: {error}"
+            return f"Error marking emails as unread: {type(error).__name__}: {error}"
 
     @authenticate
-    def unstar_email(self, message_id: str) -> str:
-        """Remove the star from an email message.
+    def star_email(self, message_id: Union[str, List[str]]) -> str:
+        """Add a star to one or more email messages. Supports batch.
 
         Args:
-            message_id (str): The ID of the message to unstar.
+            message_id: Gmail message ID(s). Accepts single ID, comma-separated IDs, or list.
 
         Returns:
-            str: Success message or error description.
+            str: Success message with count of emails starred.
         """
         try:
-            modify_request = {"removeLabelIds": ["STARRED"]}
-            self.service.users().messages().modify(userId="me", id=message_id, body=modify_request).execute()  # type: ignore
-            return f"Successfully unstarred email {message_id}"
+            ids = self._normalize_message_ids(message_id)
+            if not ids:
+                return "Error: No message IDs provided"
+
+            if len(ids) == 1:
+                self.service.users().messages().modify(
+                    userId="me", id=ids[0], body={"addLabelIds": ["STARRED"]}
+                ).execute()  # type: ignore
+            else:
+                self.service.users().messages().batchModify(
+                    userId="me", body={"ids": ids, "addLabelIds": ["STARRED"]}
+                ).execute()  # type: ignore
+
+            return f"Successfully starred {len(ids)} email(s)"
+
         except HttpError as error:
-            return f"HTTP Error unstarring email {message_id}: {error}"
+            return f"HTTP Error starring emails: {error}"
         except Exception as error:
-            return f"Error unstarring email {message_id}: {type(error).__name__}: {error}"
+            return f"Error starring emails: {type(error).__name__}: {error}"
 
     @authenticate
-    def archive_email(self, message_id: str) -> str:
-        """Archive an email by removing it from the inbox. The email is NOT deleted and can still be found via search.
+    def unstar_email(self, message_id: Union[str, List[str]]) -> str:
+        """Remove the star from one or more email messages. Supports batch.
 
         Args:
-            message_id (str): The ID of the message to archive.
+            message_id: Gmail message ID(s). Accepts single ID, comma-separated IDs, or list.
 
         Returns:
-            str: Success message or error description.
+            str: Success message with count of emails unstarred.
         """
         try:
-            modify_request = {"removeLabelIds": ["INBOX"]}
-            self.service.users().messages().modify(userId="me", id=message_id, body=modify_request).execute()  # type: ignore
-            return f"Successfully archived email {message_id}"
+            ids = self._normalize_message_ids(message_id)
+            if not ids:
+                return "Error: No message IDs provided"
+
+            if len(ids) == 1:
+                self.service.users().messages().modify(
+                    userId="me", id=ids[0], body={"removeLabelIds": ["STARRED"]}
+                ).execute()  # type: ignore
+            else:
+                self.service.users().messages().batchModify(
+                    userId="me", body={"ids": ids, "removeLabelIds": ["STARRED"]}
+                ).execute()  # type: ignore
+
+            return f"Successfully unstarred {len(ids)} email(s)"
+
         except HttpError as error:
-            return f"HTTP Error archiving email {message_id}: {error}"
+            return f"HTTP Error unstarring emails: {error}"
         except Exception as error:
-            return f"Error archiving email {message_id}: {type(error).__name__}: {error}"
+            return f"Error unstarring emails: {type(error).__name__}: {error}"
+
+    @authenticate
+    def archive_email(self, message_id: Union[str, List[str]]) -> str:
+        """Archive one or more emails by removing them from the inbox. Supports batch.
+        The emails are NOT deleted and can still be found via search.
+
+        Args:
+            message_id: Gmail message ID(s). Accepts single ID, comma-separated IDs, or list.
+
+        Returns:
+            str: Success message with count of emails archived.
+        """
+        try:
+            ids = self._normalize_message_ids(message_id)
+            if not ids:
+                return "Error: No message IDs provided"
+
+            if len(ids) == 1:
+                self.service.users().messages().modify(
+                    userId="me", id=ids[0], body={"removeLabelIds": ["INBOX"]}
+                ).execute()  # type: ignore
+            else:
+                self.service.users().messages().batchModify(
+                    userId="me", body={"ids": ids, "removeLabelIds": ["INBOX"]}
+                ).execute()  # type: ignore
+
+            return f"Successfully archived {len(ids)} email(s)"
+
+        except HttpError as error:
+            return f"HTTP Error archiving emails: {error}"
+        except Exception as error:
+            return f"Error archiving emails: {type(error).__name__}: {error}"
 
     @authenticate
     def list_custom_labels(self) -> str:
@@ -1713,36 +1768,64 @@ class GmailTools(GoogleToolkit):
     @authenticate
     def modify_message_labels(
         self,
-        message_id: str,
+        message_id: Union[str, List[str]],
         add_labels: Optional[str] = None,
         remove_labels: Optional[str] = None,
     ) -> str:
-        """Add or remove labels from a single message. Use for marking read/unread, starring, categorizing, etc.
-        For example: add_labels="STARRED" or remove_labels="UNREAD" to mark as read.
+        """Add or remove labels from one or more messages. Supports batch operations.
+
+        Use for: marking read/unread, starring, archiving, applying custom labels.
+        Examples:
+            - Mark as read: remove_labels="UNREAD"
+            - Star multiple: message_id="id1,id2,id3", add_labels="STARRED"
+            - Archive: remove_labels="INBOX"
+            - Apply custom label: add_labels="Work,Urgent"
 
         Args:
-            message_id: The Gmail message ID.
+            message_id: Gmail message ID(s). Accepts single ID, comma-separated IDs, or list.
             add_labels: Comma-separated label names to add (e.g. 'STARRED,Work').
             remove_labels: Comma-separated label names to remove (e.g. 'UNREAD,INBOX').
 
         Returns:
-            JSON string with updated message label state.
+            JSON string with results. Single message returns label state; batch returns count.
         """
         try:
-            body: Dict[str, List[str]] = {}
+            add_label_ids: List[str] = []
+            remove_label_ids: List[str] = []
             if add_labels:
                 names = [n.strip() for n in add_labels.split(",") if n.strip()]
-                body["addLabelIds"] = self._resolve_label_ids(names)
+                add_label_ids = self._resolve_label_ids(names)
             if remove_labels:
                 names = [n.strip() for n in remove_labels.split(",") if n.strip()]
-                body["removeLabelIds"] = self._resolve_label_ids(names)
+                remove_label_ids = self._resolve_label_ids(names)
 
-            if not body:
+            if not add_label_ids and not remove_label_ids:
                 return json.dumps({"error": "Must specify add_labels or remove_labels"})
 
+            ids = self._normalize_message_ids(message_id)
+            if not ids:
+                return json.dumps({"error": "Must specify at least one message_id"})
+
             service = self.service
-            result = service.users().messages().modify(userId="me", id=message_id, body=body).execute()  # type: ignore
-            return json.dumps({"id": result["id"], "labelIds": result.get("labelIds", [])})
+
+            # Single message: use messages.modify
+            if len(ids) == 1:
+                body: Dict[str, List[str]] = {}
+                if add_label_ids:
+                    body["addLabelIds"] = add_label_ids
+                if remove_label_ids:
+                    body["removeLabelIds"] = remove_label_ids
+                result = service.users().messages().modify(userId="me", id=ids[0], body=body).execute()  # type: ignore
+                return json.dumps({"id": result["id"], "labelIds": result.get("labelIds", [])})
+
+            # Multiple messages: use batchModify for efficiency
+            batch_body: Dict[str, Any] = {"ids": ids}
+            if add_label_ids:
+                batch_body["addLabelIds"] = add_label_ids
+            if remove_label_ids:
+                batch_body["removeLabelIds"] = remove_label_ids
+            service.users().messages().batchModify(userId="me", body=batch_body).execute()  # type: ignore
+            return json.dumps({"modified": len(ids), "message_ids": ids})
         except HttpError as e:
             log_error(f"Failed to modify labels on message {message_id}: {str(e)}")
             return json.dumps({"error": f"Gmail API error: {e}"})
