@@ -32,10 +32,7 @@ class AuthConfig:
     # --- HTTP timeout for API calls ---
     http_timeout: Optional[float] = None
 
-    # --- Pagination defaults ---
-    # Max items per API request. Prevents context window overflow in LLM agents.
-    # API limits: Gmail=500, Calendar=2500, Drive=1000. Default 20 is conservative.
-    # Increase to 50-100 if your agent has a larger context window.
+    # Max items per list request (default 20, API limits: Gmail=500, Calendar=2500, Drive=1000)
     max_results: int = 20
 
     # --- Scope aggregation (internal) ---
