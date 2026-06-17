@@ -32,7 +32,7 @@ class AuthConfig:
     # --- HTTP timeout for API calls ---
     http_timeout: Optional[float] = None
 
-    # Max items per list request (default 20, API limits: Gmail=500, Calendar=2500, Drive=1000)
+    # --- Pagination ---
     max_results: int = 20
 
     # --- Scope aggregation (internal) ---
