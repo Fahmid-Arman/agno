@@ -36,7 +36,7 @@ class AuthConfig:
     # Max items per API request. Prevents context window overflow in LLM agents.
     # API limits: Gmail=500, Calendar=2500, Drive=1000. Default 20 is conservative.
     # Increase to 50-100 if your agent has a larger context window.
-    max_results_per_request: int = 20
+    max_results: int = 20
 
     # --- Scope aggregation (internal) ---
     _scopes: Set[str] = field(default_factory=set, repr=False)

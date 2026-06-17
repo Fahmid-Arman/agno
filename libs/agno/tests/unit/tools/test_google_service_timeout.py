@@ -257,6 +257,7 @@ class TestNoDirectTransportConstruction:
     def google_tools_dir(self):
         # Navigate from test file to google tools directory
         import agno.tools.google.drive as drive_mod
+
         return Path(drive_mod.__file__).parent
 
     def test_drive_does_not_import_httplib2_or_authorized_http(self, google_tools_dir):
