@@ -281,6 +281,8 @@ class GoogleDriveTools(GoogleToolkit):
         include_trashed: bool = False,
         # Maximum file size (bytes) read_file will load into memory for non-Workspace files
         max_read_size: int = 10 * 1024 * 1024,
+        # Default cap for list/search operations to prevent context overflow
+        max_results: int = 20,
         # Shared Drive support — passthrough to Google Drive API
         # See: https://developers.google.com/drive/api/guides/enable-shareddrives
         corpora: str = "user",  # "user" | "domain" | "drive" | "allDrives"
@@ -299,6 +301,7 @@ class GoogleDriveTools(GoogleToolkit):
 
         self.include_trashed = include_trashed
         self.max_read_size = max_read_size
+        self.max_results = max_results
         self.download_dir = Path(download_dir).resolve()
         self.corpora = corpora
         self.supports_all_drives = supports_all_drives
@@ -437,6 +440,9 @@ class GoogleDriveTools(GoogleToolkit):
         if max_results < 1:
             return json.dumps({"error": "max_results must be greater than 0"})
 
+        # Cap at config max_results (Drive API max is 100)
+        effective_max = min(max_results, self.max_results, 100)
+
         try:
             service = cast(Resource, self.service)
             if self.include_trashed:
@@ -447,7 +453,7 @@ class GoogleDriveTools(GoogleToolkit):
                 effective_query = "trashed=false"
             list_kwargs: dict = {
                 "q": effective_query,
-                "pageSize": max_results,
+                "pageSize": effective_max,
                 "orderBy": "modifiedTime desc",
                 "fields": self.SEARCH_FIELDS,
                 "corpora": self.corpora,

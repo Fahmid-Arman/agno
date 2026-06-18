@@ -113,11 +113,13 @@ class GoogleSlidesTools(GoogleToolkit):
         delete_presentation: bool = False,
         delete_slide: bool = False,
         all: bool = False,
+        max_results: int = 20,
         instructions: Optional[str] = None,
         add_instructions: bool = True,
         **kwargs,
     ):
         self.slides_service: Any = None
+        self.max_results = max_results
         self.drive_service: Any = None
 
         tools = []
@@ -334,11 +336,13 @@ class GoogleSlidesTools(GoogleToolkit):
         try:
             if page_size <= 0:
                 return json.dumps({"error": "page_size must be a positive integer."})
+            # Cap at config max_results (Drive API max is 100)
+            effective_size = min(page_size, self.max_results, 100)
             response = (
                 self.drive_service.files()
                 .list(
                     q="mimeType='application/vnd.google-apps.presentation'",
-                    pageSize=page_size,
+                    pageSize=effective_size,
                     pageToken=page_token,
                     fields="nextPageToken, files(id, name, createdTime, modifiedTime)",
                 )

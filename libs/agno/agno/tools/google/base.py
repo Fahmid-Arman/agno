@@ -113,7 +113,6 @@ class GoogleToolkit(Toolkit):
         # 3. Default
         return DEFAULT_GOOGLE_API_TIMEOUT
 
-
     def _make_auth_request(self) -> Any:
         """Create Request for credential refresh operations.
 
