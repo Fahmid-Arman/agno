@@ -26,10 +26,15 @@ Setup:
 from typing import List, Literal, Optional
 
 from agno.agent import Agent
+from agno.db.sqlite import SqliteDb
 from agno.models.openai import OpenAIChat
+from agno.tools.google.auth import AuthConfig
 from agno.tools.google.calendar import GoogleCalendarTools
 from agno.tools.google.gmail import GmailTools
 from pydantic import BaseModel, Field
+
+db = SqliteDb(db_file="tmp/meeting_prep.db")
+auth = AuthConfig(db=db)
 
 
 class AttendeeInfo(BaseModel):
@@ -79,16 +84,18 @@ agent = Agent(
     model=OpenAIChat(id="gpt-4o"),
     tools=[
         GoogleCalendarTools(
+            auth=auth,
             create_event=False,
             update_event=False,
             delete_event=False,
         ),
         GmailTools(
+            auth=auth,
             include_tools=[
                 "search_emails",
                 "get_emails_by_context",
                 "get_thread",
-            ]
+            ],
         ),
     ],
     instructions=[

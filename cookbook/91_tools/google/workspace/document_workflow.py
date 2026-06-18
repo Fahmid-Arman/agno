@@ -15,13 +15,15 @@ Run:
 """
 
 from agno.agent import Agent
+from agno.db.sqlite import SqliteDb
 from agno.models.openai import OpenAIResponses
 from agno.tools.google.auth import AuthConfig
 from agno.tools.google.drive import GoogleDriveTools
 from agno.tools.google.sheets import GoogleSheetsTools
 from agno.tools.google.slides import GoogleSlidesTools
 
-auth = AuthConfig()
+db = SqliteDb(db_file="tmp/document_workflow.db")
+auth = AuthConfig(db=db)
 
 agent = Agent(
     name="Document Assistant",

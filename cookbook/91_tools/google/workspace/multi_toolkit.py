@@ -1,15 +1,15 @@
 """
-Google Workspace Agent (Simple OAuth)
-=====================================
+Google Workspace Agent
+======================
 
 Multi-toolkit agent with Gmail, Calendar, and Drive.
-Uses file-based token storage (token.json) for single-user local development.
+Uses DB-backed token storage with shared auth for scope aggregation.
 
 Authentication (env vars):
   GOOGLE_CLIENT_ID     - OAuth client ID from Google Cloud Console
   GOOGLE_CLIENT_SECRET - OAuth client secret
 
-First run opens browser for OAuth consent, saves token to token.json.
+First run opens browser for OAuth consent, saves token to DB.
 
 Setup:
   1. Enable Gmail, Calendar, and Drive APIs at https://console.cloud.google.com
@@ -17,22 +17,27 @@ Setup:
   3. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars
 
 Run:
-  .venvs/demo/bin/python cookbook/91_tools/google/google_workspace_simple.py
+  .venvs/demo/bin/python cookbook/91_tools/google/workspace/multi_toolkit.py
 """
 
 from agno.agent import Agent
+from agno.db.sqlite import SqliteDb
 from agno.models.openai import OpenAIResponses
+from agno.tools.google.auth import AuthConfig
 from agno.tools.google.calendar import GoogleCalendarTools
 from agno.tools.google.drive import GoogleDriveTools
 from agno.tools.google.gmail import GmailTools
+
+db = SqliteDb(db_file="tmp/multi_toolkit.db")
+auth = AuthConfig(db=db)
 
 agent = Agent(
     name="Workspace Agent",
     model=OpenAIResponses(id="gpt-5.4"),
     tools=[
-        GmailTools(),
-        GoogleCalendarTools(),
-        GoogleDriveTools(),
+        GmailTools(auth=auth),
+        GoogleCalendarTools(auth=auth),
+        GoogleDriveTools(auth=auth),
     ],
     add_datetime_to_context=True,
     markdown=True,
