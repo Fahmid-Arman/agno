@@ -18,6 +18,7 @@ def validate_google_credentials(
     token_path: str | None,
     delegated_user: str | None = None,
     auth: "AuthConfig | None" = None,
+    required_scopes: list[str] | None = None,
 ) -> Status:
     """Validate Google credentials and return provider status.
 
@@ -44,7 +45,7 @@ def validate_google_credentials(
     # OAuth mode - check DB first, then file
     # 1. Check DB (if auth.db is configured)
     if auth and auth.db:
-        status = _check_db_token(provider_id, auth)
+        status = _check_db_token(provider_id, auth, required_scopes)
         if status:
             return status
 
@@ -64,7 +65,7 @@ def validate_google_credentials(
     return Status(ok=False, detail=f"{provider_id} (oauth, not authenticated)")
 
 
-def _check_db_token(provider_id: str, auth: "AuthConfig") -> Status | None:
+def _check_db_token(provider_id: str, auth: "AuthConfig", required_scopes: list[str] | None = None) -> Status | None:
     """Check for valid token in DB. Returns Status if found, None to fall back to file."""
     try:
         from google.oauth2.credentials import Credentials
@@ -83,6 +84,15 @@ def _check_db_token(provider_id: str, auth: "AuthConfig") -> Status | None:
             token_data = decrypt_dict(token_data, key=auth.token_encryption_key)
 
         granted_scopes = row.get("granted_scopes") or []
+
+        # Check if granted scopes cover required scopes
+        if required_scopes:
+            granted_set = set(granted_scopes)
+            required_set = set(required_scopes)
+            if not required_set.issubset(granted_set):
+                missing = required_set - granted_set
+                return Status(ok=False, detail=f"{provider_id} (oauth/db, missing scopes: {', '.join(missing)})")
+
         creds = Credentials.from_authorized_user_info(token_data, granted_scopes)
 
         if creds.valid:
