@@ -1,7 +1,7 @@
 import copy
 import json
 import uuid
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, NamedTuple, Optional
 
 from ag_ui.core import (
     BaseEvent,
@@ -38,6 +38,69 @@ from agno.run.team import TeamRunEvent
 from agno.utils.message import get_text_from_message
 
 EventHandler = Callable[[BaseRunOutputEvent, StreamState], List[BaseEvent]]
+
+
+# Producer key for everything that is not part of a team run. Sharing one key keeps
+# non-team streams on a single message, exactly as before team support was added.
+_ROOT_SOURCE = ""
+
+
+class _EventSource(NamedTuple):
+    """Which agent or team produced an event.
+
+    ``key`` is a stable identity used to decide where one AG-UI message ends and
+    the next begins. ``name`` is the optional AG-UI display name, set only for
+    team members so clients can attribute their text.
+    """
+
+    key: str
+    name: Optional[str]
+
+
+def _register_team_run(chunk: BaseRunOutputEvent, state: StreamState) -> None:
+    """Record team run ids so the members they spawn can be recognized.
+
+    Team events always precede the member events they produce, so by the time a
+    member is seen its parent run is already known.
+    """
+    run_id = getattr(chunk, "run_id", None)
+    if run_id and (getattr(chunk, "team_id", None) or getattr(chunk, "team_name", None)):
+        state.team_run_ids.add(run_id)
+
+
+def _source_key(kind: str, identity: str, run_id: Optional[str]) -> str:
+    """Key one execution, not one agent.
+
+    The run id matters because the same member can be delegated to twice in a
+    single leader turn: those calls run as concurrent tasks whose events are
+    merged into one queue, so they share an agent_id but are separate answers.
+    """
+    return f"{kind}:{identity}:{run_id or ''}"
+
+
+def _event_source(chunk: BaseRunOutputEvent, state: StreamState) -> _EventSource:
+    """Identify the producer of an event within a team run.
+
+    Only a team leader and its members get their own key; everything else shares
+    ``_ROOT_SOURCE``. Splitting on any nested run would also catch workflow steps
+    and context provider sub-agents, which set parent_run_id too and must keep
+    their existing single-message behaviour.
+    """
+    run_id = getattr(chunk, "run_id", None)
+
+    team_identity = getattr(chunk, "team_id", None) or getattr(chunk, "team_name", None)
+    if team_identity:
+        return _EventSource(key=_source_key("team", team_identity, run_id), name=None)
+
+    # A member's parent is a team run seen earlier in this same stream.
+    parent_run_id = getattr(chunk, "parent_run_id", None)
+    if parent_run_id is not None and parent_run_id in state.team_run_ids:
+        agent_name = getattr(chunk, "agent_name", None)
+        agent_identity = getattr(chunk, "agent_id", None) or agent_name
+        if agent_identity:
+            return _EventSource(key=_source_key("agent", agent_identity, run_id), name=agent_name or None)
+
+    return _EventSource(key=_ROOT_SOURCE, name=None)
 
 
 def _extract_response_chunk_content(response: RunContentEvent) -> str:
@@ -110,14 +173,23 @@ def on_run_content(chunk: BaseRunOutputEvent, state: StreamState) -> List[BaseEv
     else:
         content = ""
 
+    source = _event_source(chunk, state)
+
+    # A different member/leader is speaking now — close the open message so its
+    # text is not concatenated into the previous producer's message.
+    if state.text_message_open and state.text_message_source != source.key:
+        events.append(TextMessageEndEvent(type=EventType.TEXT_MESSAGE_END, message_id=state.text_message_id))
+        state.close_text_message()
+
     if not state.text_message_open:
-        message_id = state.open_text_message()
+        message_id = state.open_text_message(source.key)
         state.clear_pending_tool_calls_parent_id()
         events.append(
             TextMessageStartEvent(
                 type=EventType.TEXT_MESSAGE_START,
                 message_id=message_id,
                 role="assistant",
+                name=source.name,
             )
         )
 
@@ -139,13 +211,16 @@ def on_tool_call_started(chunk: BaseRunOutputEvent, state: StreamState) -> List[
     if tool is None:
         return events
 
+    source = _event_source(chunk, state)
+
     # Close open text message before tool call
     if state.text_message_open:
         events.append(TextMessageEndEvent(type=EventType.TEXT_MESSAGE_END, message_id=state.text_message_id))
-        state.set_pending_tool_calls_parent_id(state.text_message_id)
+        state.set_pending_tool_calls_parent_id(state.text_message_id, state.text_message_source)
         state.close_text_message()
 
-    parent_message_id = state.get_parent_message_id_for_tool_call()
+    # Empty when the only candidate belongs to a different member/leader
+    parent_message_id = state.get_parent_message_id_for_tool_call(source.key)
 
     # Create empty parent message if none exists (AG-UI protocol requirement)
     if not parent_message_id:
@@ -155,10 +230,11 @@ def on_tool_call_started(chunk: BaseRunOutputEvent, state: StreamState) -> List[
                 type=EventType.TEXT_MESSAGE_START,
                 message_id=parent_message_id,
                 role="assistant",
+                name=source.name,
             )
         )
         events.append(TextMessageEndEvent(type=EventType.TEXT_MESSAGE_END, message_id=parent_message_id))
-        state.set_pending_tool_calls_parent_id(parent_message_id)
+        state.set_pending_tool_calls_parent_id(parent_message_id, source.key)
 
     events.append(
         ToolCallStartEvent(
@@ -449,6 +525,10 @@ def is_completion_event(chunk: BaseRunOutputEvent) -> bool:
 
 def process_event(chunk: BaseRunOutputEvent, state: StreamState) -> List[BaseEvent]:
     """Process a single Agno event and return AG-UI events to emit."""
+    # Before dispatch: most team events have no handler and become RawEvents, but
+    # they still identify the run their members belong to.
+    _register_team_run(chunk, state)
+
     event = getattr(chunk, "event", None)
     if event is None:
         return on_unknown_event(chunk, state)
